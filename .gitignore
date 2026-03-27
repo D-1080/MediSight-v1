@@ -38,3 +38,6 @@ Thumbs.db
 *.xlsx
 *.pkl
 *.joblib
+
+# Misc
+note.txt

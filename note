@@ -1,0 +1,23 @@
+Test Full Integration || Now you need THREE terminals running:
+
+Terminal 1 - ML Service:
+bashcd Major_Project/ml_service
+source ../venv/bin/activate  # Mac/Linux                    # OR
+..\venv\Scripts\activate  # Windows
+uvicorn main:app --host 0.0.0.0 --port 8001 --reload
+
+Terminal 2 - Django Backend:
+bashcd Major_Project/backend
+python manage.py runserver
+
+Terminal 3 - Frontend:
+bashcd Major_Project/frontend
+npm run dev
+_______________________________________________________
+Step: Test End-to-End
+Open browser: http://localhost:3000
+Click "New Prediction"
+Select a patient
+Choose "Diabetes Type 2"
+Fill in the form (values will auto-fill)
+Click "Generate Prediction"

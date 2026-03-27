@@ -1,0 +1,90 @@
+{
+    "model_name": "Heart Disease Prediction Model",
+    "model_version": "v1.0.0",
+    "features": [
+        "age",
+        "sex",
+        "cp",
+        "trestbps",
+        "chol",
+        "fbs",
+        "restecg",
+        "thalach",
+        "exang",
+        "oldpeak",
+        "slope",
+        "ca",
+        "thal"
+    ],
+    "target": "target",
+    "metrics": {
+        "accuracy": 0.8360655737704918,
+        "precision": 0.7948717948717948,
+        "recall": 0.9393939393939394,
+        "f1_score": 0.8611111111111112,
+        "auc_score": 0.8712121212121211
+    },
+    "confusion_matrix": {
+        "true_positives": 31,
+        "false_positives": 8,
+        "false_negatives": 2,
+        "true_negatives": 20
+    },
+    "feature_importance": [
+        {
+            "feature": "thal",
+            "importance": 0.20622557401657104
+        },
+        {
+            "feature": "cp",
+            "importance": 0.1675785332918167
+        },
+        {
+            "feature": "slope",
+            "importance": 0.11524059623479843
+        },
+        {
+            "feature": "exang",
+            "importance": 0.11018507182598114
+        },
+        {
+            "feature": "ca",
+            "importance": 0.07943340390920639
+        },
+        {
+            "feature": "sex",
+            "importance": 0.06307061016559601
+        },
+        {
+            "feature": "oldpeak",
+            "importance": 0.05343762785196304
+        },
+        {
+            "feature": "age",
+            "importance": 0.04004034027457237
+        },
+        {
+            "feature": "restecg",
+            "importance": 0.03986702859401703
+        },
+        {
+            "feature": "thalach",
+            "importance": 0.03883824869990349
+        },
+        {
+            "feature": "chol",
+            "importance": 0.0375334806740284
+        },
+        {
+            "feature": "trestbps",
+            "importance": 0.02798020839691162
+        },
+        {
+            "feature": "fbs",
+            "importance": 0.020569339394569397
+        }
+    ],
+    "training_samples": 242,
+    "test_samples": 61,
+    "training_date": "2026-03-19T16:28:29.272585"
+}

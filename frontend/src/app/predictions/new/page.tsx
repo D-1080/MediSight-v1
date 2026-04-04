@@ -65,6 +65,27 @@ export default function NewPredictionPage() {
     thal: '',
   });
 
+  const [strokeData, setStrokeData] = useState({
+    gender: '',
+    age: '',
+    hypertension: '0',
+    heart_disease: '0',
+    ever_married: '',
+    work_type: '',
+    Residence_type: '',
+    avg_glucose_level: '',
+    bmi: '',
+    smoking_status: '',
+  });
+
+  const [ckdData, setCkdData] = useState({
+    age: '', bp: '', sg: '', al: '', su: '',
+    rbc: '', pc: '', pcc: '', ba: '',
+    bgr: '', bu: '', sc: '', sod: '', pot: '',
+    hemo: '', pcv: '', wc: '', rc: '',
+    htn: '', dm: '', cad: '', appet: '', pe: '', ane: '',
+  });
+
   useEffect(() => {
     fetchPatients();
   }, []);
@@ -87,6 +108,19 @@ export default function NewPredictionPage() {
         ...prev,
         age: patientAge,
         sex: selectedPatientData.gender === 'M' ? '1' : '0',
+      }));
+
+      // Update stroke data with patient's age and gender
+      setStrokeData(prev => ({
+        ...prev,
+        age: patientAge,
+        gender: selectedPatientData.gender === 'M' ? 'Male' : 'Female',
+      }));
+
+      // Update CKD data with patient's age
+      setCkdData(prev => ({
+        ...prev,
+        age: patientAge,
       }));
     }
   }, [selectedPatientData]);
@@ -168,6 +202,48 @@ export default function NewPredictionPage() {
           slope: parseFloat(heartData.slope) || 0,
           ca: parseFloat(heartData.ca) || 0,
           thal: parseFloat(heartData.thal) || 0,
+        };
+      } else if (selectedDisease === 'STROKE') {
+        inputFeatures = {
+          gender:            strokeData.gender,
+          age:               parseFloat(strokeData.age) || 0,
+          hypertension:      parseInt(strokeData.hypertension) || 0,
+          heart_disease:     parseInt(strokeData.heart_disease) || 0,
+          ever_married:      strokeData.ever_married,
+          work_type:         strokeData.work_type,
+          Residence_type:    strokeData.Residence_type,
+          avg_glucose_level: parseFloat(strokeData.avg_glucose_level) || 0,
+          bmi:               parseFloat(strokeData.bmi) || 0,
+          smoking_status:    strokeData.smoking_status,
+        };
+      } else if (selectedDisease === 'CKD') {
+        // Only send fields that have values; backend imputes the rest
+        const parseOpt = (v: string) => v === '' ? null : parseFloat(v);
+        inputFeatures = {
+          age:   parseOpt(ckdData.age),
+          bp:    parseOpt(ckdData.bp),
+          sg:    parseOpt(ckdData.sg),
+          al:    parseOpt(ckdData.al),
+          su:    parseOpt(ckdData.su),
+          rbc:   parseOpt(ckdData.rbc),
+          pc:    parseOpt(ckdData.pc),
+          pcc:   parseOpt(ckdData.pcc),
+          ba:    parseOpt(ckdData.ba),
+          bgr:   parseOpt(ckdData.bgr),
+          bu:    parseOpt(ckdData.bu),
+          sc:    parseOpt(ckdData.sc),
+          sod:   parseOpt(ckdData.sod),
+          pot:   parseOpt(ckdData.pot),
+          hemo:  parseOpt(ckdData.hemo),
+          pcv:   parseOpt(ckdData.pcv),
+          wc:    parseOpt(ckdData.wc),
+          rc:    parseOpt(ckdData.rc),
+          htn:   parseOpt(ckdData.htn),
+          dm:    parseOpt(ckdData.dm),
+          cad:   parseOpt(ckdData.cad),
+          appet: parseOpt(ckdData.appet),
+          pe:    parseOpt(ckdData.pe),
+          ane:   parseOpt(ckdData.ane),
         };
       }
 
@@ -665,12 +741,214 @@ export default function NewPredictionPage() {
               </div>
             )}
 
-            {/* Placeholder for other diseases */}
-            {(selectedDisease === 'STROKE' || selectedDisease === 'CKD') && (
-              <div className="text-center py-12">
-                <Brain className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-                <p className="text-gray-400">Feature input form for {selectedDisease} coming soon...</p>
-                <p className="text-sm text-gray-500 mt-2">Currently supporting Diabetes and Heart Disease predictions</p>
+            {/* Stroke Features */}
+            {selectedDisease === 'STROKE' && (
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Gender <span className="text-blue-400">(Auto-filled)</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={strokeData.gender}
+                    disabled
+                    className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-gray-300 cursor-not-allowed"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Age <span className="text-blue-400">(Auto-filled)</span>
+                  </label>
+                  <input
+                    type="number"
+                    value={strokeData.age}
+                    disabled
+                    className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-gray-300 cursor-not-allowed"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Hypertension <span className="text-red-400">*</span></label>
+                  <select value={strokeData.hypertension} onChange={(e) => setStrokeData({ ...strokeData, hypertension: e.target.value })}
+                    className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-blue-500">
+                    <option value="0">No</option>
+                    <option value="1">Yes</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Heart Disease <span className="text-red-400">*</span></label>
+                  <select value={strokeData.heart_disease} onChange={(e) => setStrokeData({ ...strokeData, heart_disease: e.target.value })}
+                    className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-blue-500">
+                    <option value="0">No</option>
+                    <option value="1">Yes</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Ever Married <span className="text-red-400">*</span></label>
+                  <select value={strokeData.ever_married} onChange={(e) => setStrokeData({ ...strokeData, ever_married: e.target.value })}
+                    className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-blue-500">
+                    <option value="">Select</option>
+                    <option value="Yes">Yes</option>
+                    <option value="No">No</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Work Type <span className="text-red-400">*</span></label>
+                  <select value={strokeData.work_type} onChange={(e) => setStrokeData({ ...strokeData, work_type: e.target.value })}
+                    className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-blue-500">
+                    <option value="">Select</option>
+                    <option value="Private">Private</option>
+                    <option value="Self-employed">Self-employed</option>
+                    <option value="Govt_job">Government Job</option>
+                    <option value="children">Children</option>
+                    <option value="Never_worked">Never Worked</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Residence Type <span className="text-red-400">*</span></label>
+                  <select value={strokeData.Residence_type} onChange={(e) => setStrokeData({ ...strokeData, Residence_type: e.target.value })}
+                    className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-blue-500">
+                    <option value="">Select</option>
+                    <option value="Urban">Urban</option>
+                    <option value="Rural">Rural</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Avg. Glucose Level (mg/dL) <span className="text-red-400">*</span></label>
+                  <input type="number" step="0.1" placeholder="50–300"
+                    value={strokeData.avg_glucose_level} onChange={(e) => setStrokeData({ ...strokeData, avg_glucose_level: e.target.value })}
+                    className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-blue-500" />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">BMI <span className="text-red-400">*</span></label>
+                  <input type="number" step="0.1" placeholder="10–70"
+                    value={strokeData.bmi} onChange={(e) => setStrokeData({ ...strokeData, bmi: e.target.value })}
+                    className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-blue-500" />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Smoking Status <span className="text-red-400">*</span></label>
+                  <select value={strokeData.smoking_status} onChange={(e) => setStrokeData({ ...strokeData, smoking_status: e.target.value })}
+                    className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-blue-500">
+                    <option value="">Select</option>
+                    <option value="never smoked">Never Smoked</option>
+                    <option value="formerly smoked">Formerly Smoked</option>
+                    <option value="smokes">Currently Smokes</option>
+                    <option value="Unknown">Unknown</option>
+                  </select>
+                </div>
+              </div>
+            )}
+
+            {/* CKD Features */}
+            {selectedDisease === 'CKD' && (
+              <div>
+                <div className="mb-4 p-3 bg-blue-900 bg-opacity-20 border border-blue-700 rounded-lg">
+                  <div className="flex items-start gap-2">
+                    <Info className="w-4 h-4 text-blue-400 flex-shrink-0 mt-0.5" />
+                    <p className="text-xs text-blue-300">
+                      All fields are optional — enter available lab values. Missing values are automatically imputed from training data.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Patient Basics */}
+                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Patient Basics</p>
+                <div className="grid grid-cols-3 gap-4 mb-5">
+                  {[
+                    { key: 'age', label: 'Age (years)', placeholder: '–' },
+                    { key: 'bp',  label: 'Blood Pressure (mmHg)', placeholder: '70–180' },
+                    { key: 'sg',  label: 'Specific Gravity', placeholder: '1.005–1.030' },
+                  ].map(({ key, label, placeholder }) => (
+                    <div key={key}>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">{label}</label>
+                      <input type="number" step="any" placeholder={placeholder}
+                        value={(ckdData as any)[key]}
+                        onChange={(e) => setCkdData({ ...ckdData, [key]: e.target.value })}
+                        className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-blue-500" />
+                    </div>
+                  ))}
+                </div>
+
+                {/* Blood Work */}
+                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Blood Work</p>
+                <div className="grid grid-cols-3 gap-4 mb-5">
+                  {[
+                    { key: 'bgr',  label: 'Blood Glucose (mg/dL)',    placeholder: '50–500' },
+                    { key: 'bu',   label: 'Blood Urea (mg/dL)',       placeholder: '1–200' },
+                    { key: 'sc',   label: 'Serum Creatinine (mg/dL)', placeholder: '0.5–15' },
+                    { key: 'sod',  label: 'Sodium (mEq/L)',           placeholder: '110–160' },
+                    { key: 'pot',  label: 'Potassium (mEq/L)',        placeholder: '2–10' },
+                    { key: 'hemo', label: 'Haemoglobin (g/dL)',       placeholder: '3–20' },
+                    { key: 'pcv',  label: 'Packed Cell Vol. (%)',     placeholder: '10–55' },
+                    { key: 'wc',   label: 'White Blood Cells',        placeholder: '2000–25000' },
+                    { key: 'rc',   label: 'Red Blood Cells (M/cmm)',  placeholder: '1–8' },
+                  ].map(({ key, label, placeholder }) => (
+                    <div key={key}>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">{label}</label>
+                      <input type="number" step="any" placeholder={placeholder}
+                        value={(ckdData as any)[key]}
+                        onChange={(e) => setCkdData({ ...ckdData, [key]: e.target.value })}
+                        className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-blue-500" />
+                    </div>
+                  ))}
+                </div>
+
+                {/* Urine Analysis */}
+                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Urine Analysis</p>
+                <div className="grid grid-cols-3 gap-4 mb-5">
+                  {[
+                    { key: 'al', label: 'Albumin (0–5)',       options: ['0','1','2','3','4','5'] },
+                    { key: 'su', label: 'Sugar (0–5)',         options: ['0','1','2','3','4','5'] },
+                    { key: 'rbc', label: 'Red Blood Cells',    options: [['0','Normal'],['1','Abnormal']] as any },
+                    { key: 'pc',  label: 'Pus Cell',           options: [['0','Normal'],['1','Abnormal']] as any },
+                    { key: 'pcc', label: 'Pus Cell Clumps',    options: [['0','Not Present'],['1','Present']] as any },
+                    { key: 'ba',  label: 'Bacteria',           options: [['0','Not Present'],['1','Present']] as any },
+                  ].map(({ key, label, options }) => (
+                    <div key={key}>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">{label}</label>
+                      <select value={(ckdData as any)[key]} onChange={(e) => setCkdData({ ...ckdData, [key]: e.target.value })}
+                        className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-blue-500">
+                        <option value="">–</option>
+                        {options.map((o: any) => Array.isArray(o)
+                          ? <option key={o[0]} value={o[0]}>{o[1]}</option>
+                          : <option key={String(o)} value={String(o)}>{o}</option>
+                        )}
+                      </select>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Clinical Conditions */}
+                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Clinical Conditions</p>
+                <div className="grid grid-cols-3 gap-4">
+                  {[
+                    { key: 'htn',   label: 'Hypertension' },
+                    { key: 'dm',    label: 'Diabetes Mellitus' },
+                    { key: 'cad',   label: 'Coronary Artery Disease' },
+                    { key: 'appet', label: 'Appetite', opts: [['0','Good'],['1','Poor']] },
+                    { key: 'pe',    label: 'Pedal Edema' },
+                    { key: 'ane',   label: 'Anaemia' },
+                  ].map(({ key, label, opts }) => (
+                    <div key={key}>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">{label}</label>
+                      <select value={(ckdData as any)[key]} onChange={(e) => setCkdData({ ...ckdData, [key]: e.target.value })}
+                        className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-blue-500">
+                        <option value="">–</option>
+                        {(opts || [['0','No'],['1','Yes']] as [string, string][]).map((pair) => (
+                          <option key={pair[0]} value={pair[0]}>{pair[1]}</option>
+                        ))}
+                      </select>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
 
@@ -683,7 +961,7 @@ export default function NewPredictionPage() {
               </button>
               <button
                 onClick={handleSubmit}
-                disabled={loading || (selectedDisease !== 'DIABETES' && selectedDisease !== 'HEART')}
+                disabled={loading}
                 className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
               >
                 {loading ? (

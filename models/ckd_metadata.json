@@ -1,0 +1,146 @@
+{
+    "model_name": "Chronic Kidney Disease Prediction Model",
+    "model_version": "v1.0.0",
+    "features": [
+        "age",
+        "bp",
+        "sg",
+        "al",
+        "su",
+        "rbc",
+        "pc",
+        "pcc",
+        "ba",
+        "bgr",
+        "bu",
+        "sc",
+        "sod",
+        "pot",
+        "hemo",
+        "pcv",
+        "wc",
+        "rc",
+        "htn",
+        "dm",
+        "cad",
+        "appet",
+        "pe",
+        "ane"
+    ],
+    "target": "classification",
+    "threshold": 0.5,
+    "metrics": {
+        "accuracy": 1.0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1_score": 1.0,
+        "auc_score": 1.0
+    },
+    "confusion_matrix": {
+        "true_positives": 50,
+        "false_positives": 0,
+        "false_negatives": 0,
+        "true_negatives": 30
+    },
+    "feature_importance": [
+        {
+            "feature": "su",
+            "importance": 0.2771846055984497
+        },
+        {
+            "feature": "hemo",
+            "importance": 0.19003161787986755
+        },
+        {
+            "feature": "pcv",
+            "importance": 0.139754980802536
+        },
+        {
+            "feature": "sg",
+            "importance": 0.08680535852909088
+        },
+        {
+            "feature": "htn",
+            "importance": 0.07079421728849411
+        },
+        {
+            "feature": "dm",
+            "importance": 0.06757008284330368
+        },
+        {
+            "feature": "al",
+            "importance": 0.0614042691886425
+        },
+        {
+            "feature": "sc",
+            "importance": 0.04267001152038574
+        },
+        {
+            "feature": "rc",
+            "importance": 0.03122951276600361
+        },
+        {
+            "feature": "bgr",
+            "importance": 0.008774001151323318
+        },
+        {
+            "feature": "sod",
+            "importance": 0.0073224930092692375
+        },
+        {
+            "feature": "age",
+            "importance": 0.004701914731413126
+        },
+        {
+            "feature": "pot",
+            "importance": 0.004680021200329065
+        },
+        {
+            "feature": "bu",
+            "importance": 0.003758728038519621
+        },
+        {
+            "feature": "wc",
+            "importance": 0.002423587953671813
+        },
+        {
+            "feature": "bp",
+            "importance": 0.0008946268353611231
+        },
+        {
+            "feature": "ba",
+            "importance": 0.0
+        },
+        {
+            "feature": "pcc",
+            "importance": 0.0
+        },
+        {
+            "feature": "pc",
+            "importance": 0.0
+        },
+        {
+            "feature": "rbc",
+            "importance": 0.0
+        },
+        {
+            "feature": "cad",
+            "importance": 0.0
+        },
+        {
+            "feature": "appet",
+            "importance": 0.0
+        },
+        {
+            "feature": "pe",
+            "importance": 0.0
+        },
+        {
+            "feature": "ane",
+            "importance": 0.0
+        }
+    ],
+    "training_samples": 320,
+    "test_samples": 80,
+    "training_date": "2026-04-04T18:05:55.136852"
+}

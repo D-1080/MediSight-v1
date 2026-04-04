@@ -1,0 +1,110 @@
+{
+    "model_name": "Stroke Risk Prediction Model",
+    "model_version": "v1.0.0",
+    "features": [
+        "gender",
+        "age",
+        "hypertension",
+        "heart_disease",
+        "ever_married",
+        "work_type",
+        "Residence_type",
+        "avg_glucose_level",
+        "bmi",
+        "smoking_status"
+    ],
+    "target": "stroke",
+    "threshold": 0.3,
+    "categorical_features": [
+        "gender",
+        "ever_married",
+        "work_type",
+        "Residence_type",
+        "smoking_status"
+    ],
+    "categorical_values": {
+        "gender": [
+            "Female",
+            "Male"
+        ],
+        "ever_married": [
+            "No",
+            "Yes"
+        ],
+        "work_type": [
+            "Govt_job",
+            "Never_worked",
+            "Private",
+            "Self-employed",
+            "children"
+        ],
+        "Residence_type": [
+            "Rural",
+            "Urban"
+        ],
+        "smoking_status": [
+            "Unknown",
+            "formerly smoked",
+            "never smoked",
+            "smokes"
+        ]
+    },
+    "metrics": {
+        "accuracy": 0.7162426614481409,
+        "precision": 0.125,
+        "recall": 0.8,
+        "f1_score": 0.21621621621621623,
+        "auc_score": 0.8218312757201646
+    },
+    "confusion_matrix": {
+        "true_positives": 40,
+        "false_positives": 280,
+        "false_negatives": 10,
+        "true_negatives": 692
+    },
+    "feature_importance": [
+        {
+            "feature": "age",
+            "importance": 0.2748609781265259
+        },
+        {
+            "feature": "hypertension",
+            "importance": 0.10495873540639877
+        },
+        {
+            "feature": "work_type",
+            "importance": 0.09917718172073364
+        },
+        {
+            "feature": "ever_married",
+            "importance": 0.0895046591758728
+        },
+        {
+            "feature": "bmi",
+            "importance": 0.08933578431606293
+        },
+        {
+            "feature": "avg_glucose_level",
+            "importance": 0.08505097031593323
+        },
+        {
+            "feature": "heart_disease",
+            "importance": 0.08270405977964401
+        },
+        {
+            "feature": "smoking_status",
+            "importance": 0.062414295971393585
+        },
+        {
+            "feature": "gender",
+            "importance": 0.061620619148015976
+        },
+        {
+            "feature": "Residence_type",
+            "importance": 0.05037270486354828
+        }
+    ],
+    "training_samples": 4087,
+    "test_samples": 1022,
+    "training_date": "2026-04-04T18:05:54.851316"
+}

@@ -22,6 +22,7 @@ from patients.views import PatientViewSet
 from predictions.views import PredictionViewSet
 from users.views import UserViewSet
 from rest_framework_simplejwt.views import TokenRefreshView
+from django.http import JsonResponse
 
 # Create router
 router = DefaultRouter()
@@ -29,7 +30,20 @@ router.register(r'patients', PatientViewSet, basename='patient')
 router.register(r'predictions', PredictionViewSet, basename='prediction')
 router.register(r'users', UserViewSet, basename='user')
 
+def api_root(request):
+    return JsonResponse({
+        "service": "MediSight API",
+        "version": "1.0.0",
+        "status": "online",
+        "endpoints": {
+            "api": "/api/",
+            "admin": "/admin/",
+            "token_refresh": "/api/token/refresh/",
+        }
+    })
+
 urlpatterns = [
+    path('', api_root),
     path('admin/', admin.site.urls),
     path('api/', include(router.urls)),
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),

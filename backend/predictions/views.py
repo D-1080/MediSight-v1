@@ -54,6 +54,18 @@ class PredictionViewSet(viewsets.ModelViewSet):
                     json=input_features,
                     timeout=10
                 )
+            elif disease_type == 'STROKE':
+                ml_response = requests.post(
+                    f"{ML_SERVICE_URL}/predict/stroke",
+                    json=input_features,
+                    timeout=10
+                )
+            elif disease_type == 'CKD':
+                ml_response = requests.post(
+                    f"{ML_SERVICE_URL}/predict/ckd",
+                    json=input_features,
+                    timeout=10
+                )
             else:
                 return Response(
                     {'error': f'Disease type {disease_type} not yet supported'},

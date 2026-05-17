@@ -1,15 +1,24 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
-import { Activity, Users, TrendingUp, BarChart3, Plus, Upload, FileText, Clock, CheckCircle, AlertCircle, Eye, Brain, Download, XCircle, LogOut } from 'lucide-react';
+import { Activity, Users, TrendingUp, BarChart3, Plus, FileText, Clock, CheckCircle, AlertCircle, Eye, Brain, Download, XCircle, LogOut, RefreshCw, Stethoscope } from 'lucide-react';
 import { patientService, predictionService } from '@/lib/services';
 import { Prediction, Statistics } from '@/types';
 import { generatePredictionReport, generateBatchReport } from '@/lib/pdfService';
 import { exportPredictionsToCSV, exportPredictionsDetailedCSV } from '@/lib/csvService';
 import { exportSHAPValuesToCSV } from '@/lib/csvService';
 import Link from 'next/link';
+
+// ── Types ─────────────────────────────────────────────────────────────────────
+interface ServiceStatus {
+  name: string;
+  status: 'online' | 'offline' | 'checking';
+  latency?: number;
+}
+
+const ML_SERVICE_URL = process.env.NEXT_PUBLIC_ML_SERVICE_URL || 'http://localhost:8001';
 
 export default function MediSightDashboard() {
   const { user, isLoading, isAuthenticated, logout } = useAuth();
@@ -25,6 +34,15 @@ export default function MediSightDashboard() {
   });
   const [loading, setLoading] = useState(true);
   const [selectedPrediction, setSelectedPrediction] = useState<Prediction | null>(null);
+  const [reviewingId, setReviewingId] = useState<number | null>(null);
+  const [reviewNotes, setReviewNotes] = useState('');
+  const [reviewLoading, setReviewLoading] = useState(false);
+  const [systemStatus, setSystemStatus] = useState<ServiceStatus[]>([
+    { name: 'ML Service',  status: 'checking' },
+    { name: 'Django API',  status: 'checking' },
+    { name: 'Database',    status: 'checking' },
+  ]);
+  const [statusLoading, setStatusLoading] = useState(false);
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -66,6 +84,68 @@ export default function MediSightDashboard() {
     }
   };
   
+
+  // ── System Status ─────────────────────────────────────────────────────────
+  const fetchSystemStatus = useCallback(async () => {
+    setStatusLoading(true);
+    const results: ServiceStatus[] = [];
+
+    // Ping ML Service
+    try {
+      const t0 = Date.now();
+      const res = await fetch(`${ML_SERVICE_URL}/health`, { signal: AbortSignal.timeout(4000) });
+      const latency = Date.now() - t0;
+      results.push({ name: 'ML Service', status: res.ok ? 'online' : 'offline', latency });
+    } catch {
+      results.push({ name: 'ML Service', status: 'offline' });
+    }
+
+    // Ping Django API
+    try {
+      const t0 = Date.now();
+      const res = await fetch('http://localhost:8000/', { signal: AbortSignal.timeout(4000) });
+      const latency = Date.now() - t0;
+      results.push({ name: 'Django API', status: res.ok ? 'online' : 'offline', latency });
+    } catch {
+      results.push({ name: 'Django API', status: 'offline' });
+    }
+
+    // Database health is inferred from Django API — if API is up, DB is up
+    const apiUp = results.find(r => r.name === 'Django API')?.status === 'online';
+    results.push({ name: 'Database', status: apiUp ? 'online' : 'offline' });
+
+    setSystemStatus(results);
+    setStatusLoading(false);
+  }, []);
+
+  // Fetch status on mount and every 30s
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchSystemStatus();
+      const interval = setInterval(fetchSystemStatus, 30000);
+      return () => clearInterval(interval);
+    }
+  }, [isAuthenticated, fetchSystemStatus]);
+
+  // ── Mark as Reviewed ──────────────────────────────────────────────────────
+  const handleMarkReviewed = async () => {
+    if (!selectedPrediction) return;
+    setReviewLoading(true);
+    try {
+      await predictionService.updateStatus(selectedPrediction.id, 'REVIEWED', reviewNotes);
+      // Update local state so UI reflects change immediately
+      setPredictions(prev =>
+        prev.map(p => p.id === selectedPrediction.id ? { ...p, status: 'REVIEWED' as const } : p)
+      );
+      setSelectedPrediction(prev => prev ? { ...prev, status: 'REVIEWED' as const } : null);
+      setReviewNotes('');
+    } catch (err) {
+      console.error('Failed to mark as reviewed:', err);
+    } finally {
+      setReviewLoading(false);
+    }
+  };
+
   const getRiskColor = (risk: string) => {
     switch (risk) {
       case 'HIGH': return 'bg-red-600';
@@ -387,35 +467,69 @@ export default function MediSightDashboard() {
                 <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
                   <h3 className="text-lg font-bold text-white mb-4">Quick Actions</h3>
                   <div className="space-y-3">
-                    <button className="w-full px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center justify-center gap-2">
-                      <Plus className="w-4 h-4" />
-                      New Patient
-                    </button>
-                    <button className="w-full px-4 py-3 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition flex items-center justify-center gap-2">
-                      <Upload className="w-4 h-4" />
-                      Upload Records
-                    </button>
-                    <button className="w-full px-4 py-3 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition flex items-center justify-center gap-2">
+                    <Link href="/patients" className="block">
+                      <button className="w-full px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center justify-center gap-2">
+                        <Plus className="w-4 h-4" />
+                        New Patient
+                      </button>
+                    </Link>
+                    <Link href="/predictions/new" className="block">
+                      <button className="w-full px-4 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition flex items-center justify-center gap-2">
+                        <Brain className="w-4 h-4" />
+                        New Prediction
+                      </button>
+                    </Link>
+                    <button
+                      onClick={() => predictions.length > 0 && generateBatchReport(predictions)}
+                      disabled={predictions.length === 0}
+                      className="w-full px-4 py-3 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
                       <FileText className="w-4 h-4" />
-                      Generate Report
+                      Export PDF Report
                     </button>
-                    <button className="w-full px-4 py-3 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition flex items-center justify-center gap-2">
-                      <BarChart3 className="w-4 h-4" />
-                      View Analytics
-                    </button>
+                    <Link href="/models" className="block">
+                      <button className="w-full px-4 py-3 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition flex items-center justify-center gap-2">
+                        <Stethoscope className="w-4 h-4" />
+                        Model Performance
+                      </button>
+                    </Link>
                   </div>
                 </div>
 
                 {/* System Status */}
                 <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
-                  <h3 className="text-lg font-bold text-white mb-4">System Status</h3>
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-bold text-white">System Status</h3>
+                    <button
+                      onClick={fetchSystemStatus}
+                      disabled={statusLoading}
+                      className="p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800 transition disabled:opacity-40"
+                      title="Refresh status"
+                    >
+                      <RefreshCw className={`w-3.5 h-3.5 ${statusLoading ? 'animate-spin' : ''}`} />
+                    </button>
+                  </div>
                   <div className="space-y-3">
-                    {['ML Service', 'Database', 'Redis Cache', 'MLflow'].map((service) => (
-                      <div key={service} className="flex items-center justify-between">
-                        <span className="text-sm text-gray-400">{service}</span>
+                    {systemStatus.map((svc) => (
+                      <div key={svc.name} className="flex items-center justify-between">
+                        <span className="text-sm text-gray-400">{svc.name}</span>
                         <div className="flex items-center gap-2">
-                          <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-                          <span className="text-xs text-green-400">Online</span>
+                          {svc.status === 'checking' ? (
+                            <div className="w-2 h-2 bg-gray-500 rounded-full animate-pulse" />
+                          ) : svc.status === 'online' ? (
+                            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                          ) : (
+                            <div className="w-2 h-2 bg-red-500 rounded-full" />
+                          )}
+                          <span className={`text-xs font-medium ${
+                            svc.status === 'checking' ? 'text-gray-400' :
+                            svc.status === 'online'   ? 'text-green-400' :
+                                                        'text-red-400'
+                          }`}>
+                            {svc.status === 'checking' ? 'Checking…' :
+                             svc.status === 'online'   ? `Online${svc.latency ? ` · ${svc.latency}ms` : ''}` :
+                                                         'Offline'}
+                          </span>
                         </div>
                       </div>
                     ))}
@@ -518,8 +632,7 @@ export default function MediSightDashboard() {
                 </div>
               )}
 
-              {/* Actions */}
-              {/* Actions */}
+              {/* Export Actions */}
               <div className="flex gap-3">
                 <button 
                   onClick={() => generatePredictionReport(selectedPrediction)}
@@ -537,16 +650,39 @@ export default function MediSightDashboard() {
                 </button>
               </div>
 
-              {/* <div className="flex gap-3">
-                <button onClick={() => generatePredictionReport(selectedPrediction)}
-                  className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center justify-center gap-2">
-                  <Download className="w-4 h-4" />
-                  Download PDF Report
-                </button>
-                <button className="flex-1 px-6 py-3 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition">
-                  Mark as Reviewed
-                </button>
-              </div> */}
+              {/* Mark as Reviewed */}
+              {selectedPrediction.status !== 'REVIEWED' ? (
+                <div className="mt-4 border border-gray-700 rounded-xl p-4 bg-gray-800">
+                  <p className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
+                    <AlertCircle className="w-4 h-4 text-yellow-400" />
+                    Mark as Clinically Reviewed
+                  </p>
+                  <textarea
+                    value={reviewNotes}
+                    onChange={(e) => setReviewNotes(e.target.value)}
+                    placeholder="Add clinical notes (optional)…"
+                    rows={2}
+                    maxLength={500}
+                    className="w-full px-3 py-2 bg-gray-900 border border-gray-700 rounded-lg text-sm text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 resize-none mb-3"
+                  />
+                  <button
+                    onClick={handleMarkReviewed}
+                    disabled={reviewLoading}
+                    className="w-full px-4 py-2.5 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold rounded-lg transition flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {reviewLoading ? (
+                      <><RefreshCw className="w-4 h-4 animate-spin" /> Saving…</>
+                    ) : (
+                      <><CheckCircle className="w-4 h-4" /> Mark as Reviewed</>
+                    )}
+                  </button>
+                </div>
+              ) : (
+                <div className="mt-4 flex items-center gap-2 p-3 bg-green-900 bg-opacity-20 border border-green-700 rounded-lg">
+                  <CheckCircle className="w-4 h-4 text-green-400 flex-shrink-0" />
+                  <p className="text-sm text-green-300 font-medium">Clinically reviewed</p>
+                </div>
+              )}
             </div>
           </div>
         </div>

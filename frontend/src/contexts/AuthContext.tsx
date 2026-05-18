@@ -13,9 +13,21 @@ interface User {
   role: 'DOCTOR' | 'ADMIN' | 'ANALYST' | 'PATIENT';
 }
 
+interface RegisterData {
+  username: string;
+  email: string;
+  first_name: string;
+  last_name: string;
+  phone?: string;
+  role: string;
+  password: string;
+  password_confirm: string;
+}
+
 interface AuthContextType {
   user: User | null;
   login: (username: string, password: string) => Promise<void>;
+  register: (data: RegisterData) => Promise<void>;
   logout: () => void;
   isLoading: boolean;
   isAuthenticated: boolean;
@@ -80,6 +92,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const register = async (data: RegisterData) => {
+    try {
+      const response = await axios.post('http://localhost:8000/api/users/register/', data);
+      const { user, access, refresh } = response.data;
+      localStorage.setItem('access_token', access);
+      localStorage.setItem('refresh_token', refresh);
+      setUser(user);
+      router.push('/');
+    } catch (error: any) {
+      // Preserve the full error response so the form can show field-level errors
+      const err = new Error(error.response?.data?.error || 'Registration failed') as any;
+      err.data = error.response?.data;
+      throw err;
+    }
+  };
+
   const logout = () => {
     // Clear tokens
     localStorage.removeItem('access_token');
@@ -97,6 +125,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       value={{
         user,
         login,
+        register,
         logout,
         isLoading,
         isAuthenticated: !!user,

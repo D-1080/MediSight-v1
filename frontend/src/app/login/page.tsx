@@ -63,16 +63,7 @@ export default function LoginPage() {
       await register(signUpData);
       setSignUpSuccess('Account created! You are now signed in.');
     } catch (err: any) {
-      // Django returns field-level errors as objects
-      const data = err.data;
-      if (data && typeof data === 'object') {
-        const messages = Object.entries(data)
-          .map(([field, msgs]) => `${field}: ${Array.isArray(msgs) ? msgs.join(', ') : msgs}`)
-          .join(' | ');
-        setSignUpError(messages);
-      } else {
-        setSignUpError(err.message || 'Registration failed. Please try again.');
-      }
+      setSignUpError(err.message || 'Registration failed. Please try again.');
     } finally {
       setSignUpLoading(false);
     }

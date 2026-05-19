@@ -10,6 +10,9 @@ export default function ModelPerformancePage() {
   const { user, isLoading, isAuthenticated } = useAuth();
   const router = useRouter();
 
+  // ALL hooks must come before any conditional returns (Rules of Hooks)
+  const [activeModel, setActiveModel] = useState('diabetes');
+
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
       router.push('/login');
@@ -27,8 +30,6 @@ export default function ModelPerformancePage() {
   if (!isAuthenticated) {
     return null;
   }
-
-  const [activeModel, setActiveModel] = useState('diabetes');
 
   // Model metrics data (this will come from backend later)
   const modelMetrics = {

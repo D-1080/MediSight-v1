@@ -98,17 +98,20 @@ export default function MediSightDashboard() {
       }
       setPredictions(Array.isArray(predictionsData) ? predictionsData : []);
       
-      const [patientStats, predictionStats] = await Promise.all([
-        patientService.getStatistics(),
-        predictionService.getStatistics(),
-      ]);
-      
-      setStatistics({
-        total_patients: patientStats.total_patients || 0,
-        active_cases: patientStats.active_cases || 0,
-        predictions_today: predictionStats.predictions_today || 0,
-        total_predictions: predictionStats.total_predictions || 0,
-      });
+      // Only fetch system-wide stats for non-patient roles
+      const storedUser2 = JSON.parse(localStorage.getItem('user') || '{}');
+      if (storedUser2.role !== 'PATIENT') {
+        const [patientStats, predictionStats] = await Promise.all([
+          patientService.getStatistics(),
+          predictionService.getStatistics(),
+        ]);
+        setStatistics({
+          total_patients: patientStats.total_patients || 0,
+          active_cases: patientStats.active_cases || 0,
+          predictions_today: predictionStats.predictions_today || 0,
+          total_predictions: predictionStats.total_predictions || 0,
+        });
+      }
     } catch (error) {
       console.error('Error:', error);
       setPredictions([]);
@@ -477,9 +480,9 @@ export default function MediSightDashboard() {
                           <div className="flex-1">
                             <div className="flex items-center gap-3 mb-2">
                               <h3 className="font-semibold text-white">
-                                {pred.patient_details.first_name} {pred.patient_details.last_name}
+                                {pred.patient_details?.first_name ?? 'Patient'} {pred.patient_details?.last_name ?? ''}
                               </h3>
-                              <span className="text-xs text-gray-400">{pred.patient_details.patient_id}</span>
+                              {pred.patient_details?.patient_id && <span className="text-xs text-gray-400">{pred.patient_details.patient_id}</span>}
                               <span className={`px-2 py-1 rounded-full text-xs border ${getRiskBadgeColor(pred.risk_level)}`}>
                                 {pred.risk_level} Risk
                               </span>
@@ -670,10 +673,25 @@ export default function MediSightDashboard() {
           <div className="bg-gray-900 border border-gray-800 rounded-xl p-8 max-w-3xl w-full max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-6">
               <div>
-                <h3 className="text-2xl font-bold text-white">
-                  {selectedPrediction.patient_details.first_name} {selectedPrediction.patient_details.last_name}
-                </h3>
-                <p className="text-gray-400">{selectedPrediction.patient_details.patient_id}</p>
+                {user?.role === 'PATIENT' ? (
+                  <>
+                    <h3 className="text-2xl font-bold text-white">
+                      {diseaseLabels[selectedPrediction.disease_type] || selectedPrediction.disease_type}
+                    </h3>
+                    <p className="text-gray-400 text-sm">
+                      {new Date(selectedPrediction.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <h3 className="text-2xl font-bold text-white">
+                      {selectedPrediction.patient_details?.first_name ?? 'Patient'} {selectedPrediction.patient_details?.last_name ?? ''}
+                    </h3>
+                    {selectedPrediction.patient_details?.patient_id && (
+                      <p className="text-gray-400">{selectedPrediction.patient_details.patient_id}</p>
+                    )}
+                  </>
+                )}
               </div>
               <button
                 onClick={() => setSelectedPrediction(null)}
@@ -710,7 +728,7 @@ export default function MediSightDashboard() {
               </div>
 
               {/* SHAP Explainability */}
-              {selectedPrediction.shap_values && selectedPrediction.shap_values.length > 0 && (
+              {user && can(user.role, 'EXPORT_PREDICTION') && selectedPrediction.shap_values && selectedPrediction.shap_values.length > 0 && (
                 <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
                   <h4 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
                     <Brain className="w-5 h-5 text-blue-400" />
@@ -738,54 +756,75 @@ export default function MediSightDashboard() {
               )}
 
               {/* Export Actions */}
-              <div className="flex gap-3">
-                <button 
-                  onClick={() => generatePredictionReport(selectedPrediction)}
-                  className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center justify-center gap-2"
-                >
-                  <Download className="w-4 h-4" />
-                  Download PDF
-                </button>
-                <button 
-                  onClick={() => exportSHAPValuesToCSV(selectedPrediction)}
-                  className="flex-1 px-6 py-3 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition flex items-center justify-center gap-2"
-                >
-                  <FileText className="w-4 h-4" />
-                  Export SHAP CSV
-                </button>
-              </div>
-
-              {/* Mark as Reviewed */}
-              {selectedPrediction.status !== 'REVIEWED' ? (
-                <div className="mt-4 border border-gray-700 rounded-xl p-4 bg-gray-800">
-                  <p className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
-                    <AlertCircle className="w-4 h-4 text-yellow-400" />
-                    Mark as Clinically Reviewed
-                  </p>
-                  <textarea
-                    value={reviewNotes}
-                    onChange={(e) => setReviewNotes(e.target.value)}
-                    placeholder="Add clinical notes (optional)…"
-                    rows={2}
-                    maxLength={500}
-                    className="w-full px-3 py-2 bg-gray-900 border border-gray-700 rounded-lg text-sm text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 resize-none mb-3"
-                  />
+              {/* Export actions — Doctor/Admin only */}
+              {user && can(user.role, 'EXPORT_PREDICTION') && (
+                <div className="flex gap-3">
                   <button
-                    onClick={handleMarkReviewed}
-                    disabled={reviewLoading}
-                    className="w-full px-4 py-2.5 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold rounded-lg transition flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    onClick={() => generatePredictionReport(selectedPrediction)}
+                    className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center justify-center gap-2"
                   >
-                    {reviewLoading ? (
-                      <><RefreshCw className="w-4 h-4 animate-spin" /> Saving…</>
-                    ) : (
-                      <><CheckCircle className="w-4 h-4" /> Mark as Reviewed</>
-                    )}
+                    <Download className="w-4 h-4" />
+                    Download PDF
+                  </button>
+                  <button
+                    onClick={() => exportSHAPValuesToCSV(selectedPrediction)}
+                    className="flex-1 px-6 py-3 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition flex items-center justify-center gap-2"
+                  >
+                    <FileText className="w-4 h-4" />
+                    Export SHAP CSV
                   </button>
                 </div>
-              ) : (
-                <div className="mt-4 flex items-center gap-2 p-3 bg-green-900 bg-opacity-20 border border-green-700 rounded-lg">
-                  <CheckCircle className="w-4 h-4 text-green-400 flex-shrink-0" />
-                  <p className="text-sm text-green-300 font-medium">Clinically reviewed</p>
+              )}
+
+              {/* Mark as Reviewed — Doctors and Admins only */}
+              {user && can(user.role, 'MARK_REVIEWED') && (
+                selectedPrediction.status !== 'REVIEWED' ? (
+                  <div className="mt-4 border border-gray-700 rounded-xl p-4 bg-gray-800">
+                    <p className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
+                      <AlertCircle className="w-4 h-4 text-yellow-400" />
+                      Mark as Clinically Reviewed
+                    </p>
+                    <textarea
+                      value={reviewNotes}
+                      onChange={(e) => setReviewNotes(e.target.value)}
+                      placeholder="Add clinical notes (optional)…"
+                      rows={2}
+                      maxLength={500}
+                      className="w-full px-3 py-2 bg-gray-900 border border-gray-700 rounded-lg text-sm text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 resize-none mb-3"
+                    />
+                    <button
+                      onClick={handleMarkReviewed}
+                      disabled={reviewLoading}
+                      className="w-full px-4 py-2.5 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold rounded-lg transition flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {reviewLoading ? (
+                        <><RefreshCw className="w-4 h-4 animate-spin" /> Saving…</>
+                      ) : (
+                        <><CheckCircle className="w-4 h-4" /> Mark as Reviewed</>
+                      )}
+                    </button>
+                  </div>
+                ) : (
+                  <div className="mt-4 flex items-center gap-2 p-3 bg-green-900 bg-opacity-20 border border-green-700 rounded-lg">
+                    <CheckCircle className="w-4 h-4 text-green-400 flex-shrink-0" />
+                    <p className="text-sm text-green-300 font-medium">Clinically reviewed</p>
+                  </div>
+                )
+              )}
+              {/* Patient view — show read-only review status */}
+              {user?.role === 'PATIENT' && (
+                <div className={`mt-4 flex items-center gap-2 p-3 rounded-lg border ${
+                  selectedPrediction.status === 'REVIEWED'
+                    ? 'bg-green-900 bg-opacity-20 border-green-700'
+                    : 'bg-yellow-900 bg-opacity-10 border-yellow-800'
+                }`}>
+                  {selectedPrediction.status === 'REVIEWED' ? (
+                    <><CheckCircle className="w-4 h-4 text-green-400 flex-shrink-0" />
+                    <p className="text-sm text-green-300 font-medium">Reviewed by your doctor</p></>
+                  ) : (
+                    <><Clock className="w-4 h-4 text-yellow-400 flex-shrink-0" />
+                    <p className="text-sm text-yellow-300">Awaiting doctor review</p></>
+                  )}
                 </div>
               )}
             </div>

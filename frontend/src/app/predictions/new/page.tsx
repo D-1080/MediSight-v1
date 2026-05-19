@@ -15,8 +15,13 @@ export default function NewPredictionPage() {
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
       router.push('/login');
+      return;
     }
-  }, [isLoading, isAuthenticated, router]);
+    // Patients cannot create predictions — redirect to dashboard
+    if (!isLoading && isAuthenticated && user?.role === 'PATIENT') {
+      router.push('/');
+    }
+  }, [isLoading, isAuthenticated, user, router]);
 
   if (isLoading) {
     return (

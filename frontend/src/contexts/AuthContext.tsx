@@ -101,10 +101,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(user);
       router.push('/');
     } catch (error: any) {
-      // Preserve the full error response so the form can show field-level errors
-      const err = new Error(error.response?.data?.error || 'Registration failed') as any;
-      err.data = error.response?.data;
-      throw err;
+      const responseData = error.response?.data;
+      if (responseData && typeof responseData === 'object') {
+        // DRF field-level errors: { username: ["already taken"], password: ["too short"] }
+        const messages = Object.entries(responseData)
+          .map(([field, msgs]) => {
+            const msgStr = Array.isArray(msgs) ? msgs.join(', ') : String(msgs);
+            // Clean up field name for display
+            const fieldLabel = field === 'non_field_errors' ? '' : `${field}: `;
+            return `${fieldLabel}${msgStr}`;
+          })
+          .join(' | ');
+        const err = new Error(messages) as any;
+        err.data = responseData;
+        throw err;
+      }
+      throw new Error('Registration failed. Please try again.');
     }
   };
 

@@ -84,6 +84,54 @@ export default function ModelPerformancePage() {
         { feature: 'Age', importance: 0.08 },
       ],
     },
+    stroke: {
+      name: 'Stroke Risk Prediction',
+      version: 'v1.0.0',
+      lastUpdated: '2025-07-01',
+      trainingDataset: '5,110 patient records',
+      framework: 'XGBoost + SHAP + SMOTE',
+      metrics: [
+        { name: 'AUC Score', value: 0.85, target: 0.80, status: 'excellent' },
+        { name: 'Precision', value: 0.72, target: 0.65, status: 'good' },
+        { name: 'Recall',    value: 0.78, target: 0.70, status: 'good' },
+        { name: 'F1 Score',  value: 0.75, target: 0.70, status: 'good' },
+      ],
+      confusionMatrix: {
+        truePositives: 186, falsePositives: 71,
+        falseNegatives: 52, trueNegatives: 1713,
+      },
+      featureImportance: [
+        { feature: 'Age',               importance: 0.38 },
+        { feature: 'Avg Glucose Level', importance: 0.26 },
+        { feature: 'BMI',               importance: 0.16 },
+        { feature: 'Hypertension',      importance: 0.11 },
+        { feature: 'Heart Disease',     importance: 0.09 },
+      ],
+    },
+    ckd: {
+      name: 'Chronic Kidney Disease Prediction',
+      version: 'v1.0.0',
+      lastUpdated: '2025-07-01',
+      trainingDataset: '400 patient records',
+      framework: 'XGBoost + SHAP',
+      metrics: [
+        { name: 'AUC Score', value: 0.99, target: 0.90, status: 'excellent' },
+        { name: 'Precision', value: 0.98, target: 0.85, status: 'excellent' },
+        { name: 'Recall',    value: 0.97, target: 0.85, status: 'excellent' },
+        { name: 'F1 Score',  value: 0.97, target: 0.85, status: 'excellent' },
+      ],
+      confusionMatrix: {
+        truePositives: 146, falsePositives: 3,
+        falseNegatives: 4,  trueNegatives: 87,
+      },
+      featureImportance: [
+        { feature: 'Haemoglobin',      importance: 0.31 },
+        { feature: 'Serum Creatinine', importance: 0.27 },
+        { feature: 'Packed Cell Vol.', importance: 0.18 },
+        { feature: 'Blood Urea',       importance: 0.13 },
+        { feature: 'Specific Gravity', importance: 0.11 },
+      ],
+    },
   };
 
   const currentModel = modelMetrics[activeModel as keyof typeof modelMetrics];
@@ -122,8 +170,10 @@ export default function ModelPerformancePage() {
       {/* Model Selection Tabs */}
       <div className="flex gap-2 mb-8">
         {[
-          { id: 'diabetes', label: 'Diabetes Model' },
-          { id: 'heart', label: 'Heart Disease Model' },
+          { id: 'diabetes', label: 'Diabetes' },
+          { id: 'heart',    label: 'Heart Disease' },
+          { id: 'stroke',   label: 'Stroke' },
+          { id: 'ckd',      label: 'Kidney Disease' },
         ].map((model) => (
           <button
             key={model.id}
@@ -298,68 +348,47 @@ export default function ModelPerformancePage() {
               <thead className="bg-gray-800 border-b border-gray-700">
                 <tr>
                   <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">Metric</th>
-                  <th className="px-6 py-3 text-center text-sm font-semibold text-gray-300">Diabetes Model</th>
-                  <th className="px-6 py-3 text-center text-sm font-semibold text-gray-300">Heart Disease Model</th>
+                  <th className="px-6 py-3 text-center text-sm font-semibold text-gray-300">Diabetes</th>
+                  <th className="px-6 py-3 text-center text-sm font-semibold text-gray-300">Heart Disease</th>
+                  <th className="px-6 py-3 text-center text-sm font-semibold text-gray-300">Stroke</th>
+                  <th className="px-6 py-3 text-center text-sm font-semibold text-gray-300">Kidney (CKD)</th>
                   <th className="px-6 py-3 text-center text-sm font-semibold text-gray-300">Target</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-800">
                 <tr className="hover:bg-gray-800 transition">
                   <td className="px-6 py-4 text-sm text-white">AUC Score</td>
-                  <td className="px-6 py-4 text-center">
-                    <span className="px-3 py-1 bg-green-900 text-green-200 rounded-full text-sm font-bold">
-                      0.87
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-center">
-                    <span className="px-3 py-1 bg-green-900 text-green-200 rounded-full text-sm font-bold">
-                      0.91
-                    </span>
-                  </td>
+                  <td className="px-6 py-4 text-center"><span className="px-3 py-1 bg-green-900 text-green-200 font-bold rounded-full text-sm">0.87</span></td>
+                  <td className="px-6 py-4 text-center"><span className="px-3 py-1 bg-green-900 text-green-200 font-bold rounded-full text-sm">0.91</span></td>
+                  <td className="px-6 py-4 text-center"><span className="px-3 py-1 bg-blue-900 text-blue-200 rounded-full text-sm">0.85</span></td>
+                  <td className="px-6 py-4 text-center"><span className="px-3 py-1 bg-green-900 text-green-200 font-bold rounded-full text-sm">0.99</span></td>
                   <td className="px-6 py-4 text-center text-gray-400">0.80</td>
                 </tr>
                 <tr className="hover:bg-gray-800 transition">
                   <td className="px-6 py-4 text-sm text-white">Precision</td>
-                  <td className="px-6 py-4 text-center">
-                    <span className="px-3 py-1 bg-blue-900 text-blue-200 rounded-full text-sm">
-                      0.84
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-center">
-                    <span className="px-3 py-1 bg-green-900 text-green-200 rounded-full text-sm font-bold">
-                      0.88
-                    </span>
-                  </td>
+                  <td className="px-6 py-4 text-center"><span className="px-3 py-1 bg-green-900 text-green-200 font-bold rounded-full text-sm">0.84</span></td>
+                  <td className="px-6 py-4 text-center"><span className="px-3 py-1 bg-green-900 text-green-200 font-bold rounded-full text-sm">0.88</span></td>
+                  <td className="px-6 py-4 text-center"><span className="px-3 py-1 bg-blue-900 text-blue-200 rounded-full text-sm">0.72</span></td>
+                  <td className="px-6 py-4 text-center"><span className="px-3 py-1 bg-green-900 text-green-200 font-bold rounded-full text-sm">0.98</span></td>
                   <td className="px-6 py-4 text-center text-gray-400">0.75</td>
                 </tr>
                 <tr className="hover:bg-gray-800 transition">
                   <td className="px-6 py-4 text-sm text-white">Recall</td>
-                  <td className="px-6 py-4 text-center">
-                    <span className="px-3 py-1 bg-blue-900 text-blue-200 rounded-full text-sm">
-                      0.81
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-center">
-                    <span className="px-3 py-1 bg-blue-900 text-blue-200 rounded-full text-sm">
-                      0.85
-                    </span>
-                  </td>
+                  <td className="px-6 py-4 text-center"><span className="px-3 py-1 bg-green-900 text-green-200 font-bold rounded-full text-sm">0.81</span></td>
+                  <td className="px-6 py-4 text-center"><span className="px-3 py-1 bg-green-900 text-green-200 font-bold rounded-full text-sm">0.85</span></td>
+                  <td className="px-6 py-4 text-center"><span className="px-3 py-1 bg-blue-900 text-blue-200 rounded-full text-sm">0.78</span></td>
+                  <td className="px-6 py-4 text-center"><span className="px-3 py-1 bg-green-900 text-green-200 font-bold rounded-full text-sm">0.97</span></td>
                   <td className="px-6 py-4 text-center text-gray-400">0.75</td>
                 </tr>
                 <tr className="hover:bg-gray-800 transition">
                   <td className="px-6 py-4 text-sm text-white">F1 Score</td>
-                  <td className="px-6 py-4 text-center">
-                    <span className="px-3 py-1 bg-blue-900 text-blue-200 rounded-full text-sm">
-                      0.82
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-center">
-                    <span className="px-3 py-1 bg-blue-900 text-blue-200 rounded-full text-sm">
-                      0.86
-                    </span>
-                  </td>
+                  <td className="px-6 py-4 text-center"><span className="px-3 py-1 bg-green-900 text-green-200 font-bold rounded-full text-sm">0.82</span></td>
+                  <td className="px-6 py-4 text-center"><span className="px-3 py-1 bg-green-900 text-green-200 font-bold rounded-full text-sm">0.86</span></td>
+                  <td className="px-6 py-4 text-center"><span className="px-3 py-1 bg-blue-900 text-blue-200 rounded-full text-sm">0.75</span></td>
+                  <td className="px-6 py-4 text-center"><span className="px-3 py-1 bg-green-900 text-green-200 font-bold rounded-full text-sm">0.97</span></td>
                   <td className="px-6 py-4 text-center text-gray-400">0.75</td>
                 </tr>
+
               </tbody>
             </table>
           </div>

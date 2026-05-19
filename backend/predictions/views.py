@@ -16,8 +16,25 @@ class PredictionViewSet(viewsets.ModelViewSet):
     """
     ViewSet for Prediction CRUD operations with Real ML Integration
     """
-    queryset = Prediction.objects.all()
     serializer_class = PredictionSerializer
+
+    def get_queryset(self):
+        """
+        Role-based queryset:
+        - ADMIN/DOCTOR/ANALYST: all predictions
+        - PATIENT: only predictions linked to their own Patient record
+        """
+        user = self.request.user
+        qs = Prediction.objects.select_related('patient').all()
+
+        # ?mine=true filter (used by patient frontend)
+        mine = self.request.query_params.get('mine', 'false').lower() == 'true'
+
+        if hasattr(user, 'role') and user.role == 'PATIENT' or mine:
+            # Match predictions where patient email = user email
+            qs = qs.filter(patient__email=user.email)
+
+        return qs.order_by('-created_at')
     
     @action(detail=False, methods=['post'])
     def create_prediction(self, request):

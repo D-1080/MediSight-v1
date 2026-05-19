@@ -20,6 +20,32 @@ interface ServiceStatus {
 
 const ML_SERVICE_URL = process.env.NEXT_PUBLIC_ML_SERVICE_URL || 'http://localhost:8001';
 
+const rolePermissions: Record<string, string[]> = {
+  ADMIN: [
+    'VIEW_ALL_PATIENTS',
+    'CREATE_PREDICTION',
+    'VIEW_MODEL_REGISTRY',
+    'CREATE_PATIENT',
+    'EXPORT_PREDICTION',
+    'VIEW_SYSTEM_STATUS',
+  ],
+  DOCTOR: [
+    'VIEW_ALL_PATIENTS',
+    'CREATE_PREDICTION',
+    'VIEW_MODEL_REGISTRY',
+    'CREATE_PATIENT',
+    'EXPORT_PREDICTION',
+  ],
+  ANALYST: [
+    'VIEW_MODEL_REGISTRY',
+  ],
+  PATIENT: [],
+};
+
+const can = (role: string, permission: string) => {
+  return rolePermissions[role]?.includes(permission) ?? false;
+};
+
 export default function MediSightDashboard() {
   const { user, isLoading, isAuthenticated, logout } = useAuth();
   const router = useRouter();
@@ -217,28 +243,52 @@ export default function MediSightDashboard() {
             </button>
           </div>
         </div>
-        {/* Navigation Tabs */}
-        <div className="flex items-center gap-4">
-          <button
-            onClick={() => setActiveView('dashboard')}
-            className={`px-6 py-2 rounded-lg transition ${
+        {/* Navigation Tabs — role-aware */}
+        <div className="flex items-center gap-2">
+          {/* Dashboard — all roles */}
+          <button onClick={() => setActiveView('dashboard')}
+            className={`px-5 py-2 rounded-lg transition text-sm font-medium flex items-center gap-2 ${
               activeView === 'dashboard' ? 'bg-blue-600 text-white' : 'bg-gray-900 text-gray-400 hover:text-white'
-            }`}
-          >
-            Dashboard
+            }`}>
+            <BarChart3 className="w-4 h-4" /> Dashboard
           </button>
-          <Link href="/patients">
-            <button className="px-6 py-2 rounded-lg transition bg-gray-900 text-gray-400 hover:text-white flex items-center gap-2">
-              <Users className="w-4 h-4" />
-              Patients
+
+          {/* Patients — Admin + Doctor */}
+          {user && can(user.role, 'VIEW_ALL_PATIENTS') && (
+            <Link href="/patients">
+              <button className="px-5 py-2 rounded-lg transition text-sm font-medium bg-gray-900 text-gray-400 hover:text-white flex items-center gap-2">
+                <Users className="w-4 h-4" /> Patients
+              </button>
+            </Link>
+          )}
+
+          {/* New Prediction — Admin + Doctor */}
+          {user && can(user.role, 'CREATE_PREDICTION') && (
+            <Link href="/predictions/new">
+              <button className="px-5 py-2 rounded-lg transition text-sm font-medium bg-gray-900 text-gray-400 hover:text-white flex items-center gap-2">
+                <Brain className="w-4 h-4" /> New Prediction
+              </button>
+            </Link>
+          )}
+
+          {/* Model Registry — Admin + Analyst + Doctor */}
+          {user && can(user.role, 'VIEW_MODEL_REGISTRY') && (
+            <Link href="/models">
+              <button className="px-5 py-2 rounded-lg transition text-sm font-medium bg-gray-900 text-gray-400 hover:text-white flex items-center gap-2">
+                <Activity className="w-4 h-4" /> Models
+              </button>
+            </Link>
+          )}
+
+          {/* My Reports — Patient only */}
+          {user?.role === 'PATIENT' && (
+            <button onClick={() => setActiveView('my-reports')}
+              className={`px-5 py-2 rounded-lg transition text-sm font-medium flex items-center gap-2 ${
+                activeView === 'my-reports' ? 'bg-blue-600 text-white' : 'bg-gray-900 text-gray-400 hover:text-white'
+              }`}>
+              <FileText className="w-4 h-4" /> My Reports
             </button>
-          </Link>
-          <Link href="/models">
-            <button className="px-6 py-2 rounded-lg transition bg-gray-900 text-gray-400 hover:text-white flex items-center gap-2">
-              <Brain className="w-4 h-4" />
-              Model Performance
-            </button>
-          </Link>
+          )}
         </div>
       </header>
 
@@ -467,36 +517,47 @@ export default function MediSightDashboard() {
                 <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
                   <h3 className="text-lg font-bold text-white mb-4">Quick Actions</h3>
                   <div className="space-y-3">
-                    <Link href="/patients" className="block">
-                      <button className="w-full px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center justify-center gap-2">
-                        <Plus className="w-4 h-4" />
-                        New Patient
+                    {/* Admin + Doctor actions */}
+                    {user && can(user.role, 'CREATE_PATIENT') && (
+                      <Link href="/patients" className="block">
+                        <button className="w-full px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center justify-center gap-2">
+                          <Plus className="w-4 h-4" />
+                          New Patient
+                        </button>
+                      </Link>
+                    )}
+                    {user && can(user.role, 'CREATE_PREDICTION') && (
+                      <Link href="/predictions/new" className="block">
+                        <button className="w-full px-4 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition flex items-center justify-center gap-2">
+                          <Brain className="w-4 h-4" />
+                          New Prediction
+                        </button>
+                      </Link>
+                    )}
+                    {user && can(user.role, 'EXPORT_PREDICTION') && (
+                      <button
+                        onClick={() => predictions.length > 0 && generateBatchReport(predictions)}
+                        disabled={predictions.length === 0}
+                        className="w-full px-4 py-3 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
+                      >
+                        <FileText className="w-4 h-4" />
+                        Export PDF Report
                       </button>
-                    </Link>
-                    <Link href="/predictions/new" className="block">
-                      <button className="w-full px-4 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition flex items-center justify-center gap-2">
-                        <Brain className="w-4 h-4" />
-                        New Prediction
-                      </button>
-                    </Link>
-                    <button
-                      onClick={() => predictions.length > 0 && generateBatchReport(predictions)}
-                      disabled={predictions.length === 0}
-                      className="w-full px-4 py-3 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
-                    >
-                      <FileText className="w-4 h-4" />
-                      Export PDF Report
-                    </button>
-                    <Link href="/models" className="block">
-                      <button className="w-full px-4 py-3 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition flex items-center justify-center gap-2">
-                        <Stethoscope className="w-4 h-4" />
-                        Model Performance
-                      </button>
-                    </Link>
+                    )}
+                    {/* All roles can view models */}
+                    {user && can(user.role, 'VIEW_MODEL_REGISTRY') && (
+                      <Link href="/models" className="block">
+                        <button className="w-full px-4 py-3 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition flex items-center justify-center gap-2">
+                          <Stethoscope className="w-4 h-4" />
+                          Model Performance
+                        </button>
+                      </Link>
+                    )}
                   </div>
                 </div>
 
-                {/* System Status */}
+                {/* System Status — Admin only */}
+                {user && can(user.role, 'VIEW_SYSTEM_STATUS') && (
                 <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-lg font-bold text-white">System Status</h3>
@@ -535,6 +596,7 @@ export default function MediSightDashboard() {
                     ))}
                   </div>
                 </div>
+                )}{/* End admin-only System Status */}
               </div>
             </div>
           </div>
@@ -542,7 +604,37 @@ export default function MediSightDashboard() {
       )}
 
       {/* Patients View Placeholder */}
-      {activeView === 'patients' && (
+      {/* Patient-only: My Reports view */}
+      {activeView === 'my-reports' && user?.role === 'PATIENT' && (
+        <div className="grid grid-cols-1 gap-6 p-6">
+          <div className="bg-gray-900 border border-gray-800 rounded-xl p-8 text-center">
+            <FileText className="w-12 h-12 text-blue-400 mx-auto mb-4" />
+            <h2 className="text-xl font-bold text-white mb-2">My Health Reports</h2>
+            <p className="text-gray-400 text-sm mb-6">Your prediction history and risk assessments will appear here. Contact your doctor to run a new assessment.</p>
+            <div className="grid grid-cols-1 gap-3 max-w-sm mx-auto">
+              {predictions.length === 0 ? (
+                <p className="text-gray-500 text-sm">No reports yet.</p>
+              ) : (
+                predictions.map(p => (
+                  <div key={p.id} className="bg-gray-800 rounded-lg p-4 text-left">
+                    <div className="flex justify-between items-center">
+                      <span className="text-white font-medium capitalize">{p.disease_type.toLowerCase()}</span>
+                      <span className={`text-xs px-2 py-1 rounded-full font-semibold ${
+                        p.risk_level === 'HIGH' ? 'bg-red-900 text-red-300' :
+                        p.risk_level === 'MEDIUM' ? 'bg-yellow-900 text-yellow-300' :
+                        'bg-green-900 text-green-300'
+                      }`}>{p.risk_level}</span>
+                    </div>
+                    <p className="text-gray-400 text-xs mt-1">{new Date(p.created_at).toLocaleDateString()}</p>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+            {activeView === 'patients' && (
         <div className="text-center py-20">
           <Users className="w-16 h-16 text-gray-600 mx-auto mb-4" />
           <h2 className="text-2xl font-bold text-white mb-2">Patient Management</h2>

@@ -524,7 +524,8 @@ export default function MediSightDashboard() {
 
               {/* Sidebar */}
               <div className="space-y-6">
-                {/* Quick Actions */}
+                {/* Quick Actions — hidden entirely for PATIENT role */}
+                {user && user.role !== 'PATIENT' && (
                 <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
                   <h3 className="text-lg font-bold text-white mb-4">Quick Actions</h3>
                   <div className="space-y-3">
@@ -566,6 +567,7 @@ export default function MediSightDashboard() {
                     )}
                   </div>
                 </div>
+                )}{/* End Quick Actions patient hide */}
 
                 {/* System Status — Admin only */}
                 {user && can(user.role, 'VIEW_SYSTEM_STATUS') && (

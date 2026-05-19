@@ -66,6 +66,12 @@ export const predictionService = {
       return [];
     }
   },
+  getMyPredictions: async (): Promise<Prediction[]> => {
+    // Returns only predictions belonging to the logged-in patient
+    const response = await api.get('/predictions/?mine=true');
+    return response.data.results || response.data;
+  },
+
   
   getById: async (id: number): Promise<Prediction> => {
     const response = await api.get(endpoints.predictionDetail(id));

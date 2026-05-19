@@ -67,9 +67,14 @@ export const predictionService = {
     }
   },
   getMyPredictions: async (): Promise<Prediction[]> => {
-    // Returns only predictions belonging to the logged-in patient
-    const response = await api.get('/predictions/?mine=true');
-    return response.data.results || response.data;
+    // Returns only predictions belonging to the logged-in patient (filtered server-side)
+    try {
+      const response = await api.get('/predictions/?mine=true');
+      return response.data.results || response.data;
+    } catch (error) {
+      console.error('Error fetching patient predictions:', error);
+      return [];
+    }
   },
 
   

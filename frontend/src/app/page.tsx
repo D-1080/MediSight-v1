@@ -88,7 +88,14 @@ export default function MediSightDashboard() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const predictionsData = await predictionService.getAll();
+      // Role-aware fetch
+      const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
+      let predictionsData;
+      if (storedUser.role === 'PATIENT') {
+        predictionsData = await predictionService.getMyPredictions();
+      } else {
+        predictionsData = await predictionService.getAll();
+      }
       setPredictions(Array.isArray(predictionsData) ? predictionsData : []);
       
       const [patientStats, predictionStats] = await Promise.all([
@@ -364,7 +371,7 @@ export default function MediSightDashboard() {
                     <p className="text-sm text-gray-400 mt-1">Latest AI-powered disease risk assessments</p>
                   </div>
                   <div className="flex gap-2">
-                    {predictions.length > 0 && (
+                    {predictions.length > 0 && user && can(user.role, 'EXPORT_PREDICTION') && (
                       <>
                         {/* CSV Export Dropdown */}
                         <div className="relative group">
@@ -400,12 +407,14 @@ export default function MediSightDashboard() {
                         </button>
                       </>
                     )}
-                    <Link href="/predictions/new">
-                      <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center gap-2">
-                        <Plus className="w-4 h-4" />
-                        New Prediction
-                      </button>
-                    </Link>
+                    {user && can(user.role, 'CREATE_PREDICTION') && (
+                      <Link href="/predictions/new">
+                        <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center gap-2">
+                          <Plus className="w-4 h-4" />
+                          New Prediction
+                        </button>
+                      </Link>
+                    )}
                   </div>
                 </div>
 
@@ -427,12 +436,14 @@ export default function MediSightDashboard() {
                         Export All
                       </button>
                     )}
-                    <Link href="/predictions/new">
-                      <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center gap-2">
-                        <Plus className="w-4 h-4" />
-                        New Prediction
-                      </button>
-                    </Link>
+                    {user && can(user.role, 'CREATE_PREDICTION') && (
+                      <Link href="/predictions/new">
+                        <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center gap-2">
+                          <Plus className="w-4 h-4" />
+                          New Prediction
+                        </button>
+                      </Link>
+                    )}
                   </div>
                 </div> */}
                 

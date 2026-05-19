@@ -30,9 +30,12 @@ class PredictionViewSet(viewsets.ModelViewSet):
         # ?mine=true filter (used by patient frontend)
         mine = self.request.query_params.get('mine', 'false').lower() == 'true'
 
-        if hasattr(user, 'role') and user.role == 'PATIENT' or mine:
-            # Match predictions where patient email = user email
+        # Parentheses required — 'and' binds tighter than 'or'
+        if mine or (hasattr(user, 'role') and user.role == 'PATIENT'):
+            # Link patient record to logged-in user via matching email
             qs = qs.filter(patient__email=user.email)
+
+        return qs.order_by('-created_at')
 
         return qs.order_by('-created_at')
     
